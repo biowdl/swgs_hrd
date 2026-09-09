@@ -158,17 +158,17 @@ task SplitFasta {
 
         python <<EOF
         with open("~{fasta}", "r") as in_fasta:
-            line = next(in_fasta)
+            line = next(in_fasta, False)
             while line:
                 chr, *_ = line[1:].split()
                 out_path = f"~{outDir}/{chr}"
                 print(out_path)
                 with open(out_path, "w") as out_fasta:
                     out_fasta.write(line)
-                    line = next(in_fasta)
+                    line = next(in_fasta, False)
                     while line and line[0] != ">":
                         out_fasta.write(line)
-                        line = next(in_fasta)
+                        line = next(in_fasta, False)
         EOF
     >>>
 
