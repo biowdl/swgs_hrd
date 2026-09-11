@@ -27,6 +27,9 @@ workflow swgs_hrd {
         Int readLength = 150
     }
 
+    meta {
+        allowNestedInputs: true
+    }
 
     # mappbility
     call gem2.Index as gemIndex {
