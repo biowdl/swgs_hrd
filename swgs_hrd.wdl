@@ -91,8 +91,8 @@ workflow swgs_hrd {
         call picard.MarkDuplicates as removeDuplicates {
             input:
                 inputBams = filterReads.outputBam,
-                outputBamPath = sampleDir + "~{sample.id}" + ".remove_dups.bam",
-                metricsPath = sampleDir + "~{sample.id}" + ".remove_dups.metrics",
+                outputBamPath = sampleDir + "/~{sample.id}.remove_dups.bam",
+                metricsPath = sampleDir + "/~{sample.id}.remove_dups.metrics",
                 removeDuplicates = true
         }
 
