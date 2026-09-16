@@ -25,6 +25,9 @@ workflow swgs_hrd {
         String adapterReverse = "AGATCGGAAGAG"
         String platform = "illumina"
         Int readLength = 150
+
+        File? mappability
+        Array[File]+? chrFiles
     }
 
     meta {
@@ -32,21 +35,25 @@ workflow swgs_hrd {
     }
 
     # mappbility
-    call gem2.Index as gemIndex {
-        input:
-            fasta = referenceFasta
+    if (! defined(mappability)) {
+        call gem2.Index as gemIndex {
+            input:
+                fasta = referenceFasta
+        }
+
+        call gem2.Mappability as gemMappability {
+            input:
+                gemIndex = gemIndex.gemIndex,
+                readLength = readLength
+        }
     }
 
-    call gem2.Mappability as mappability {
-        input:
-            gemIndex = gemIndex.gemIndex,
-            readLength = readLength
-    }
-
-    call SplitFasta as splitFasta {
-        input:
-            fasta = referenceFasta,
-            outDir = "./chrFiles"
+    if (! defined(chrFiles)) {
+        call SplitFasta as splitFasta {
+            input:
+                fasta = referenceFasta,
+                outDir = "./chrFiles"
+        }
     }
 
     call biowdl.InputConverter as convertSampleConfig {
@@ -112,8 +119,8 @@ workflow swgs_hrd {
                 bamFile = removeDuplicates.outputBam,
                 bamIndex = removeDuplicates.outputBamIndex,
                 referenceFastaFai = referenceFastaFai,
-                mappability = mappability.mappability,
-                chrFiles = splitFasta.fastaFiles,
+                mappability = select_first([mappability, gemMappability.mappability]),
+                chrFiles = select_first([chrFiles, splitFasta.fastaFiles]),
                 outputDir = "~{sampleDir}/FREEC",
                 pairedEnd = defined(sample.readgroups[0].read2)
         }
