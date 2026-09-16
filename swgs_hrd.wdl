@@ -67,7 +67,6 @@ workflow swgs_hrd {
         String sampleDir = "./~{sample.id}"
         scatter (readgroup in sample.readgroups) {
             String readgroupDir = "~{sampleDir}/~{readgroup.id}"
-            Boolean singleEnd = defined(readgroup.read2)
 
             call qc.QC as qualityControl {
                 input:
@@ -122,7 +121,7 @@ workflow swgs_hrd {
                 mappability = select_first([mappability, gemMappability.mappability]),
                 chrFiles = select_first([chrFiles, splitFasta.fastaFiles]),
                 outputDir = "~{sampleDir}/FREEC",
-                pairedEnd = defined(sample.readgroups[0].read2)
+                pairedEnd = defined(sample.readgroups[0].R2)
         }
 
         # TODO add FREEC visualization
