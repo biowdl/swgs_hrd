@@ -60,6 +60,7 @@ workflow swgs_hrd {
         String sampleDir = "./~{sample.id}"
         scatter (readgroup in sample.readgroups) {
             String readgroupDir = "~{sampleDir}/~{readgroup.id}"
+            Boolean singleEnd = defined(readgroup.read2)
 
             call qc.QC as qualityControl {
                 input:
@@ -113,14 +114,19 @@ workflow swgs_hrd {
                 referenceFastaFai = referenceFastaFai,
                 mappability = mappability.mappability,
                 chrFiles = splitFasta.fastaFiles,
-                outputDir = "~{sampleDir}/FREEC"
+                outputDir = "~{sampleDir}/FREEC",
+                pairedEnd = defined(sample.readgroups[0].read2)
         }
+
+        # TODO add FREEC visualization
 
         call shallowHRD.ShallowHRD_hg19_controlfreec_chrX as calculateHRD {
             input:
                 ratioTxt = copyNumberCalling.ratio,
                 outputDir = "~{sampleDir}/shallowHRD"
         }
+
+        # TODO extract HRD status, ie from dups_number_LGAs get the number for for size 10. >=20 HRD, < 15 no HRD, 15-19 borderline
 
         Array[File] sampleReports = flatten([metrics.reports,
                                              [removeDuplicates.metricsFile],
