@@ -224,7 +224,7 @@ task GetHRDStatus {
     command <<<
         python <<EOF > HRD_status.tsv
         paths = ["~{sep='", "' numberLGAs}"]
-        samples ["~{sep='", "' samples}"]
+        samples = ["~{sep='", "' samples}"]
 
         print("sample\tHRD\tNumber LGAs 10Mb")
         for sample, path in zip(samples, paths):
