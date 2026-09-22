@@ -124,7 +124,11 @@ workflow swgs_hrd {
                 pairedEnd = defined(sample.readgroups[0].R2)
         }
 
-        # TODO add FREEC visualization
+        call freec.makeGraph2_0 as cnvPlots {
+            input:
+                ratio = copyNumberCalling.ratio,
+                outputDir = "~{sampleDir}/FREEC"
+        }
 
         call shallowHRD.ShallowHRD_hg19_controlfreec_chrX as calculateHRD {
             input:
@@ -132,11 +136,16 @@ workflow swgs_hrd {
                 outputDir = "~{sampleDir}/shallowHRD"
         }
 
-        # TODO extract HRD status, ie from dups_number_LGAs get the number for for size 10. >=20 HRD, < 15 no HRD, 15-19 borderline
-
         Array[File] sampleReports = flatten([metrics.reports,
                                              [removeDuplicates.metricsFile],
                                              flatten(qualityControl.reports)])
+        String sampleName = sample.id
+    }
+
+    call GetHRDStatus as getHRDStatus {
+        input:
+            numberLGAs = calculateHRD.number_LGAs,
+            samples = sampleName
     }
 
     Array[File] allReports = flatten(sampleReports)
@@ -153,6 +162,8 @@ workflow swgs_hrd {
         Array[File] freecInfo = copyNumberCalling.info
         Array[File] freecRatio = copyNumberCalling.ratio
         Array[File] freecSampleCpn = copyNumberCalling.sampleCpn
+        Array[File] freecCnvPlots = cnvPlots.ratioPng
+        File hrdStatus = getHRDStatus.hrdStatus
         Array[File] filteredBams = removeDuplicates.outputBam
         Array[File] filteredBamIndexes = removeDuplicates.outputBamIndex
         Array[File] reports = allReports
@@ -201,5 +212,51 @@ task SplitFasta {
     parameter_meta {
         fasta: {description: "The fasta to split up.", category: "required"}
         outDir: {description: "The directory to write the output to.", category: "required"}
+    }
+}
+
+task GetHRDStatus {
+    input {
+        Array[File]+ numberLGAs
+        Array[String]+ samples
+    }
+
+    command <<<
+        python <<EOF > HRD_status.tsv
+        paths = ["~{sep='", "' numberLGAs}"]
+        samples ["~{sep='", "' samples}"]
+
+        print("sample\tHRD\tNumber LGAs 10Mb")
+        for sample, path in zip(samples, paths):
+            with open(path, "r") as num_lga:
+                for line in num_lga:
+                    size, num = line.strip().split()
+                if size != "10":
+                    continue
+                num = int(num)
+                if num < 15:
+                    hrd = "No (< 15)"
+                elif num >= 20:
+                    hrd = "Yes (>= 20)"
+                else:
+                    hrd = "Borderline [15;19]"
+                print(f"{sample}\t{hrd}\t{num}")
+        EOF
+    >>>
+
+    output {
+        File hrdStatus = "HRD_status.tsv"
+    }
+
+    runtime {
+        cpu: 1
+        memory: "1GiB"
+        time_minutes: length(samples) # !UnknownRuntimeKey
+        docker: "python:3.12-slim"
+    }
+
+    parameter_meta {
+        numberLGAs: {description: "The number_LGAs.txt files from shallowHRD.", category: "required"}
+        samples: {description: "The sample names.", category: "required"}
     }
 }
