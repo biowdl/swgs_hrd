@@ -231,16 +231,17 @@ task GetHRDStatus {
             with open(path, "r") as num_lga:
                 for line in num_lga:
                     size, num = line.strip().split()
-                if size != "10":
-                    continue
-                num = int(num)
-                if num < 15:
-                    hrd = "No (< 15)"
-                elif num >= 20:
-                    hrd = "Yes (>= 20)"
-                else:
-                    hrd = "Borderline [15;19]"
-                print(f"{sample}\t{hrd}\t{num}")
+                    if size != "10":
+                        continue
+                    num = int(num)
+                    if num < 15:
+                        hrd = "No (< 15)"
+                    elif num >= 20:
+                        hrd = "Yes (>= 20)"
+                    else:
+                        hrd = "Borderline [15;19]"
+                    print(f"{sample}\t{hrd}\t{num}")
+                    break
         EOF
     >>>
 
